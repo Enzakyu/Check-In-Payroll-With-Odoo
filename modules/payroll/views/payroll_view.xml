@@ -1,5 +1,7 @@
-<?xml version="1.0" encoding="utf-8"?>
-<odoo> <record id="view_custom_payroll_tree" model="ir.ui.view">
+<?xml version="1.0"?>
+<odoo><data>
+
+    <record id="view_custom_payroll_tree" model="ir.ui.view">
         <name>custom.payroll.tree</name>
         <model>custom.payroll</model>
         <arch type="xml">
@@ -22,4 +24,4 @@
     <menuitem id="menu_custom_payroll_root" name="Custom Payroll" sequence="10"/>
     <menuitem id="menu_custom_payroll_sub" name="Gaji Karyawan" parent="menu_custom_payroll_root" action="action_custom_payroll" sequence="10"/>
 
-</odoo>
+</data></odoo>
