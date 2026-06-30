@@ -1,5 +1,5 @@
 {
-    'name': 'Custom Payroll System',
+    'name': 'Payroll System',
     'version': '1.0',
     'category': 'Human Resources',
     'summary': 'Modul sederhana untuk menghitung gaji karyawan',
