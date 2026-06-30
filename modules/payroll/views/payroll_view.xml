@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_custom_payroll_tree" model="ir.ui.view">
+        <name>custom.payroll.tree</name>
+        <model>custom.payroll</model>
+        <arch type="xml">
+            <tree string="Daftar Payroll">
+                <field name="name"/>
+                <field name="employee_id"/>
+                <field name="wage_net"/>
+                <field name="state"/>
+            </tree>
+        </arch>
+    </record>
+
+    <record id="view_custom_payroll_form" model="ir.ui.view">
+        <name>custom.payroll.form</name>
+        <model>custom.payroll</model>
+        <arch type="xml">
+            <form string="Form Payroll">
+                <header>
+                    <button name="action_approve" string="Setujui" type="object" invisible="state != 'draft'" class="oe_highlight"/>
+                    <button name="action_pay" string="Bayar" type="object" invisible="state != 'approved'" class="oe_highlight"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,approved,paid"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+                    <group>
+                        <group string="Informasi Karyawan">
+                            <field name="employee_id" readonly="state != 'draft'"/>
+                        </group>
+                        <group string="Rincian Gaji">
+                            <field name="wage_basic" readonly="state != 'draft'"/>
+                            <field name="wage_net" class="oe_subtotal_footer_separator"/>
+                        </group>
+                    </group>
+                </sheet>
+            </form>
+        </arch>
+    </record>
+
+    <record id="action_custom_payroll" model="ir.actions.act_window">
+        <name>Payroll Karyawan</name>
+        <type>ir.actions.act_window</type>
+        <model>custom.payroll</model>
+        <view_mode>tree,form</view_mode>
+    </record>
+
+    <menuitem id="menu_custom_payroll_root" name="Custom Payroll" sequence="10"/>
+    <menuitem id="menu_custom_payroll_sub" name="Gaji Karyawan" parent="menu_custom_payroll_root" action="action_custom_payroll" sequence="10"/>
+
+</odoo>

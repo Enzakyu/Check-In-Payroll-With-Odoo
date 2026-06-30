@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Portal N&N Supplies | Kehadiran & Payroll Odoo</title>
+  <meta name="description" content="Sistem portal kehadiran (Check-in/Check-out) karyawan terintegrasi dengan modul payroll dan sinkronisasi data Odoo ERP untuk N&N Supplies.">
+  
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div class="app-container">
+    
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="logo-container">
+        <div class="logo-icon">N</div>
+        <div class="logo-text">
+          <h1>N&N Supplies</h1>
+          <p>Portal Kehadiran</p>
+        </div>
+      </div>
+      
+      <nav class="nav-menu">
+        <li class="nav-item active" data-view="checkin" id="navCheckin">
+          <button type="button">
+            <i class="fa-solid fa-clock"></i>
+            <span>Check-In Mandiri</span>
+          </button>
+        </li>
+        <li class="nav-item" data-view="admin" id="navAdmin">
+          <button type="button">
+            <i class="fa-solid fa-user-shield"></i>
+            <span>Dashboard Admin</span>
+          </button>
+        </li>
+        <li class="nav-item" data-view="odoo" id="navOdoo">
+          <button type="button">
+            <i class="fa-solid fa-rotate"></i>
+            <span>Integrasi Odoo</span>
+          </button>
+        </li>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <div class="admin-avatar">AD</div>
+        <div class="admin-info">
+          <h4>Admin Portal</h4>
+          <p>N&N Supplies HQ</p>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="main-content">
+      
+      <!-- 1. VIEW: EMPLOYEE CHECK-IN -->
+      <section id="checkinView" class="page-view active">
+        <header class="content-header">
+          <div class="header-title">
+            <h2>Presensi Karyawan</h2>
+            <p>Pilih nama Anda di bawah ini dan lakukan pencatatan jam kerja masuk/keluar.</p>
+          </div>
+          <div class="sync-status-indicator">
+            <div class="pulse-dot" id="syncStatusDot"></div>
+            <span id="syncStatusText" style="font-size: 0.8rem; color: var(--text-secondary);">Synced with Local</span>
+          </div>
+        </header>
+
+        <div class="mb-1">
+          <h3 style="font-size: 1rem; margin-bottom: 0.75rem; color: var(--text-secondary);">Pilih Profil Karyawan:</h3>
+          <div class="user-selector-container" id="employeeSelector">
+            <!-- Populated dynamically via JS -->
+          </div>
+        </div>
+
+        <div class="checkin-grid">
+          <!-- Check-in Action Box -->
+          <div class="glass-card clock-container">
+            <div class="live-time" id="liveTime">00:00:00</div>
+            <div class="live-date" id="liveDate">Selasa, 30 Juni 2026</div>
+
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; width: 100%;">
+              <img id="selectedEmpPic" src="" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary);">
+              <div style="text-align: left;">
+                <h4 id="selectedEmpName" style="font-size: 1rem; font-weight:700;">-</h4>
+                <p id="selectedEmpRole" style="font-size: 0.75rem; color: var(--text-secondary);">-</p>
+              </div>
+            </div>
+
+            <div class="form-group" style="width: 100%; text-align: left;">
+              <label for="checkInNotes">Catatan Aktivitas / Shift (Opsional)</label>
+              <input type="text" id="checkInNotes" class="form-control" placeholder="Contoh: Shift Pagi, audit barang, dll...">
+            </div>
+
+            <!-- Radar / Map Simulation -->
+            <div class="map-sim" style="width: 100%;">
+              <div class="map-radar" id="mapRadar"></div>
+              <div class="map-label" id="mapLabel">
+                <i class="fa-solid fa-location-dot"></i> Mendeteksi Lokasi...
+              </div>
+            </div>
+
+            <button type="button" id="checkInActionBtn" class="btn btn-success" data-action="checkin">
+              <i class="fa-solid fa-right-to-bracket"></i> CLOCK IN
+            </button>
+          </div>
+
+          <!-- Personal Log Box -->
+          <div class="glass-card" style="display: flex; flex-direction: column; height: 100%;">
+            <div class="flex-between mb-2">
+              <h3 style="font-size: 1.1rem; font-weight: 600;"><i class="fa-solid fa-history" style="color: var(--primary); margin-right: 0.5rem;"></i> Riwayat Minggu Ini</h3>
+              <span class="badge badge-info">Aktif</span>
+            </div>
+            
+            <div class="table-wrapper" style="flex-grow: 1;">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Tanggal</th>
+                    <th>Jam Masuk</th>
+                    <th>Jam Keluar</th>
+                    <th>Total Kerja</th>
+                  </tr>
+                </thead>
+                <tbody id="personalLogsBody">
+                  <!-- Populated dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. VIEW: ADMIN DASHBOARD (PAYROLL & ATTENDANCE) -->
+      <section id="adminView" class="page-view">
+        <header class="content-header">
+          <div class="header-title">
+            <h2>Dashboard Admin & Payroll</h2>
+            <p>Kelola data kehadiran manual karyawan, hitung kalkulasi penggajian, dan ekspor slip gaji.</p>
+          </div>
+          <div>
+            <button type="button" class="btn btn-primary" onclick="PayrollModule.openAddEmployeeModal()">
+              <i class="fa-solid fa-plus"></i> Karyawan Baru
+            </button>
+          </div>
+        </header>
+
+        <!-- Stats Counter Overview -->
+        <div class="stats-grid">
+          <div class="glass-card stat-card">
+            <div class="stat-info">
+              <p>Total Karyawan</p>
+              <h3 id="statTotalEmployees">0</h3>
+            </div>
+            <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-info">
+              <p>Hadir Hari Ini</p>
+              <h3 id="statPresentToday">0</h3>
+            </div>
+            <div class="stat-icon" style="color: var(--success);"><i class="fa-solid fa-calendar-check"></i></div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-info">
+              <p>Total Jam Logged</p>
+              <h3 id="statTotalHours">0.0 hrs</h3>
+            </div>
+            <div class="stat-icon" style="color: var(--info);"><i class="fa-solid fa-business-time"></i></div>
+          </div>
+          <div class="glass-card stat-card">
+            <div class="stat-info">
+              <p>Estimasi Payroll</p>
+              <h3 id="statPayrollEst">Rp 0</h3>
+            </div>
+            <div class="stat-icon" style="color: var(--primary);"><i class="fa-solid fa-wallet"></i></div>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
+          
+          <!-- Attendance Register & Log Modifier -->
+          <div class="glass-card">
+            <div class="flex-between mb-2">
+              <div>
+                <h3 style="font-size: 1.15rem; font-weight: 700;">Log Registrasi Kehadiran</h3>
+                <p style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 2px;">Data lembur otomatis terhitung apabila jam kerja melebihi 8 jam sehari.</p>
+              </div>
+              <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <select id="adminEmployeeFilter" class="form-control" style="padding: 0.5rem; font-size: 0.85rem;">
+                  <option value="all">Semua Karyawan</option>
+                  <!-- Populated dynamically via JS -->
+                </select>
+                <button type="button" class="btn btn-secondary btn-icon" onclick="PayrollModule.openAddLogModal()" title="Tambah Kehadiran Manual">
+                  <i class="fa-solid fa-plus"></i> Log Manual
+                </button>
+              </div>
+            </div>
+
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Karyawan</th>
+                    <th>Tanggal</th>
+                    <th>Jam Masuk</th>
+                    <th>Jam Keluar</th>
+                    <th>Total Jam Kerja</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="attendanceTableBody">
+                  <!-- Populated dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Payroll Processing Section -->
+          <div class="glass-card">
+            <h3 class="mb-1" style="font-size: 1.15rem; font-weight: 700;">Pemrosesan & Perhitungan Gaji</h3>
+            <p class="mb-2" style="font-size: 0.8rem; color: var(--text-secondary);">Rumus: Gaji Pokok (Jam Kerja * Tarif) + Tunjangan - Potongan Wajib.</p>
+            
+            <div class="table-wrapper">
+              <table class="table">
+                <thead>
+                  <tr>
+                    <th>Karyawan</th>
+                    <th>Akumulasi Jam</th>
+                    <th>Gaji Terhitung</th>
+                    <th>Tunjangan</th>
+                    <th>Potongan</th>
+                    <th>Total Gaji Bersih</th>
+                    <th>Aksi</th>
+                  </tr>
+                </thead>
+                <tbody id="payrollTableBody">
+                  <!-- Populated dynamically via JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Employee Database CRUD List -->
+          <div>
+            <h3 class="mb-2" style="font-size: 1.15rem; font-weight: 700;">Manajemen Database Karyawan</h3>
+            <div id="adminEmployeeList" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 1rem;">
+              <!-- Populated dynamically via JS -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- 3. VIEW: ODOO INTEGRATION PANEL -->
+      <section id="odooView" class="page-view">
+        <header class="content-header">
+          <div class="header-title">
+            <h2>Integrasi & Sinkronisasi Odoo ERP</h2>
+            <p>Konfigurasi kredensial API dan sinkronisasikan log kehadiran lokal ke modul HR Odoo ERP secara real-time.</p>
+          </div>
+        </header>
+
+        <div class="odoo-mapping-grid">
+          
+          <!-- Configuration Form & Database Mapping -->
+          <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+            
+            <!-- Connection Settings -->
+            <div class="glass-card">
+              <h3 class="mb-2" style="font-size: 1.1rem; font-weight: 700;"><i class="fa-solid fa-link" style="color: var(--primary); margin-right: 0.5rem;"></i> Kredensial Odoo API</h3>
+              <form id="odooSettingsForm">
+                <div class="form-group">
+                  <label for="odooUrl">Odoo Server URL</label>
+                  <input type="url" id="odooUrl" class="form-control" value="https://nn-supplies.odoo.com" required>
+                </div>
+                <div class="form-group">
+                  <label for="odooDb">Database Name</label>
+                  <input type="text" id="odooDb" class="form-control" value="nn_supplies_prod" required>
+                </div>
+                <div class="form-group">
+                  <label for="odooUsername">User Username/Email</label>
+                  <input type="email" id="odooUsername" class="form-control" value="admin@nnsupplies.com" required>
+                </div>
+                <div class="form-group">
+                  <label for="odooApiKey">Odoo API Key / Password Key</label>
+                  <input type="password" id="odooApiKey" class="form-control" value="●●●●●●●●●●●●●●●●●" required>
+                </div>
+                <button type="submit" class="btn btn-secondary" style="width: 100%; font-weight: 600;">
+                  <i class="fa-solid fa-floppy-disk"></i> Simpan Konfigurasi
+                </button>
+              </form>
+            </div>
+
+            <!-- Mapping Grid local ID vs Odoo ID -->
+            <div class="glass-card">
+              <h3 class="mb-1" style="font-size: 1.1rem; font-weight: 700;"><i class="fa-solid fa-network-wired" style="color: var(--primary); margin-right: 0.5rem;"></i> Database Mapping (hr.employee)</h3>
+              <p class="mb-2" style="font-size: 0.75rem; color: var(--text-secondary);">Pemetaan unik ID karyawan internal N&N ke Model Employee Odoo.</p>
+              
+              <div class="table-wrapper">
+                <table class="table" style="font-size: 0.8rem;">
+                  <thead>
+                    <tr>
+                      <th>Karyawan</th>
+                      <th>Local ID</th>
+                      <th>Odoo Model ID</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="odooMappingsBody">
+                    <!-- Populated dynamically via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Live Terminal Simulator -->
+          <div class="glass-card" style="display: flex; flex-direction: column;">
+            <div class="flex-between mb-2">
+              <div>
+                <h3 style="font-size: 1.1rem; font-weight: 700;"><i class="fa-solid fa-terminal" style="color: var(--primary); margin-right: 0.5rem;"></i> Simulator Koneksi XML-RPC</h3>
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 2px;">Menampilkan detail log API payload, handshakes, dan callback respon.</p>
+              </div>
+              <button type="button" class="btn btn-secondary btn-icon" onclick="OdooModule.clearConsole()" title="Bersihkan Terminal">
+                <i class="fa-solid fa-broom"></i>
+              </button>
+            </div>
+
+            <!-- Terminal Screen -->
+            <div class="odoo-terminal" id="odooConsole">
+              <div class="terminal-line info">[SYSTEM] Terminal initialized. Waiting for action...</div>
+              <div class="terminal-line warning">[XMLRPC] Check connections to Odoo DB. Mapping verified.</div>
+            </div>
+
+            <!-- Sync Buttons -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.5rem;">
+              <div class="glass-card" style="padding: 1rem; text-align: center;">
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Kehadiran (hr.attendance)</p>
+                <button type="button" id="btnSyncAttendance" class="btn btn-primary" style="width: 100%;" onclick="OdooModule.syncAttendance()">
+                  <i class="fa-solid fa-upload"></i> Sync Kehadiran
+                </button>
+                <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.5rem;">Terakhir sync: <span id="lastSyncAtt">-</span></p>
+              </div>
+              <div class="glass-card" style="padding: 1rem; text-align: center;">
+                <p style="font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 0.5rem;">Payslips (hr.payslip)</p>
+                <button type="button" id="btnSyncPayroll" class="btn btn-primary" style="width: 100%;" onclick="OdooModule.syncPayroll()">
+                  <i class="fa-solid fa-arrows-spin"></i> Sync Payroll
+                </button>
+                <p style="font-size: 0.65rem; color: var(--text-muted); margin-top: 0.5rem;">Terakhir sync: <span id="lastSyncPay">-</span></p>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+    </main>
+
+  </div>
+
+  <!-- ==================== MODALS ==================== -->
+
+  <!-- A. MODAL: ADD / EDIT EMPLOYEE -->
+  <div class="modal-overlay" id="employeeModal">
+    <div class="modal-content glass-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="empModalTitle" style="font-weight: 700; color: var(--primary);">Tambah Karyawan Baru</h3>
+        <button type="button" class="modal-close" onclick="PayrollModule.closeModal('employeeModal')">&times;</button>
+      </div>
+      <form id="employeeForm">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="empFormId">ID Karyawan</label>
+            <input type="text" id="empFormId" class="form-control" placeholder="EMP001" required>
+          </div>
+          <div class="form-group">
+            <label for="empFormOdooId">Odoo Partner ID Mapping</label>
+            <input type="number" id="empFormOdooId" class="form-control" placeholder="Contoh: 101">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="empFormName">Nama Lengkap</label>
+          <input type="text" id="empFormName" class="form-control" placeholder="Contoh: Budi Santoso" required>
+        </div>
+        <div class="form-group">
+          <label for="empFormRole">Jabatan / Peran</label>
+          <input type="text" id="empFormRole" class="form-control" placeholder="Contoh: Operations Supervisor" required>
+        </div>
+        <div class="form-group">
+          <label for="empFormRate">Tarif Gaji per Jam (IDR)</label>
+          <input type="number" id="empFormRate" class="form-control" placeholder="Contoh: 30000" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="empFormAllowance">Tunjangan Bulanan (IDR)</label>
+            <input type="number" id="empFormAllowance" class="form-control" value="0">
+          </div>
+          <div class="form-group">
+            <label for="empFormDeduction">Potongan Bulanan (IDR)</label>
+            <input type="number" id="empFormDeduction" class="form-control" value="0">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="PayrollModule.closeModal('employeeModal')">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Data</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- B. MODAL: ADD / EDIT ATTENDANCE LOG -->
+  <div class="modal-overlay" id="logModal">
+    <div class="modal-content glass-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="logModalTitle" style="font-weight: 700; color: var(--primary);">Edit Log Kehadiran</h3>
+        <button type="button" class="modal-close" onclick="PayrollModule.closeModal('logModal')">&times;</button>
+      </div>
+      <form id="logForm">
+        <input type="hidden" id="logFormId">
+        <div class="form-group">
+          <label for="logFormEmpId">Karyawan</label>
+          <select id="logFormEmpId" class="form-control" required></select>
+        </div>
+        <div class="form-group">
+          <label for="logFormDate">Tanggal Kehadiran</label>
+          <input type="date" id="logFormDate" class="form-control" required>
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+          <div class="form-group">
+            <label for="logFormCheckIn">Jam Masuk (HH:MM:SS)</label>
+            <input type="text" id="logFormCheckIn" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="logFormCheckOut">Jam Keluar (HH:MM:SS)</label>
+            <input type="text" id="logFormCheckOut" class="form-control" placeholder="Kosongkan jika aktif">
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="logFormLocation">Lokasi Koordinat GPS</label>
+          <input type="text" id="logFormLocation" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="logFormNotes">Catatan Kerja</label>
+          <input type="text" id="logFormNotes" class="form-control">
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+          <button type="button" class="btn btn-secondary" onclick="PayrollModule.closeModal('logModal')">Batal</button>
+          <button type="submit" class="btn btn-primary">Simpan Log</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- C. MODAL: PAYSLIP PREVIEW & PRINT -->
+  <div class="modal-overlay" id="payslipModal">
+    <div class="modal-content glass-card" style="max-width: 700px; padding: 1.5rem;">
+      <div class="modal-header">
+        <h3 style="font-weight: 700; color: var(--primary);">Pratinjau Slip Gaji N&N Supplies</h3>
+        <button type="button" class="modal-close" onclick="PayrollModule.closeModal('payslipModal')">&times;</button>
+      </div>
+      
+      <!-- Payslip Target for Printing -->
+      <div id="payslipRenderArea">
+        <!-- Rendered dynamically via JS -->
+      </div>
+      
+      <div class="modal-footer-btns" style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem;">
+        <button type="button" class="btn btn-secondary" onclick="PayrollModule.closeModal('payslipModal')">Tutup</button>
+        <button type="button" class="btn btn-primary" onclick="PayrollModule.printPayslip()">
+          <i class="fa-solid fa-print"></i> Cetak / Simpan PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== JS SCRIPTS ==================== -->
+  <script src="js/database.js"></script>
+  <script src="js/checkin.js"></script>
+  <script src="js/payroll.js"></script>
+  <script src="js/odoo.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
